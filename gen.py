@@ -1,21 +1,33 @@
 from typing import NamedTuple
 from datetime import datetime, timedelta
 from dataclasses import dataclass
+from enum import Enum
 
 
 
 DOUBLE_BACKSLASH = "\\\\"
 NEWLINE = "\n"
 
+class Team(Enum):
+    ONE = "Carnegie University of Melon"
+    TWO = "Melon University of Carnegie"
+
+@dataclass
+class Athlete:
+    name: str
+    team: Team
+
 @dataclass
 class EventDef:
     name: str
     duration: int # In minutes
+    entries: list[Athlete]
 
 @dataclass
 class Event:
     name: str
     time: str
+    entries: list[Athlete]
 
 def gen_event_list(events: list[Event]) -> str:
     return f"""\\section*{{Event List}}
@@ -43,14 +55,12 @@ def render_event_heat(event: Event) -> str:
 \\toprule
 \\textbf{{Lane}} & \\textbf{{Athlete Name}} & \\textbf{{School/Team}} & \\textbf{{Seed Time}} \\\\
 \\midrule
-1 & & & \\\\
-2 & & & \\\\
-3 & & & \\\\
-4 & & & \\\\
-5 & & & \\\\
-6 & & & \\\\
-7 & & & \\\\
-8 & & & \\\\
+{
+    (NEWLINE).join(
+        f"{i + 1} & {athlete.name} & {athlete.team.value} & seed time &{DOUBLE_BACKSLASH}"
+        for i, athlete in enumerate(event.entries)
+    )
+}
 \\bottomrule
 \\end{{tabular}}
 \\vspace{{2.5em}}
@@ -60,7 +70,7 @@ def generate_heat_sheet(name: str, date: str, location: str, host: str, events: 
     proc_events: list[Event] = []
     for event in events:
         time_delta = timedelta(minutes=event.duration)
-        proc_events.append(Event(name=event.name, time=start_time.strftime("%-I:%M %p")))
+        proc_events.append(Event(name=event.name, time=start_time.strftime("%-I:%M %p"), entries=event.entries))
         start_time += time_delta + between_event_time
 
     return f"""\\documentclass[11pt]{{article}}
@@ -107,17 +117,19 @@ def generate_heat_sheet(name: str, date: str, location: str, host: str, events: 
 
 
 if __name__ == "__main__":
+    SEAN = Athlete(name="Sean Dutton", team=Team.ONE)
+
     events = [
-        EventDef(name="100 and 10 Hurdles", duration=7),
-        EventDef(name="Blind Walk", duration=7),
-        EventDef(name="Random 400-2000", duration=10),
-        EventDef(name="Wheel Throw", duration=8),
-        EventDef(name="Frisbee Put", duration=15),
-        EventDef(name="Shot Relay", duration=9),
-        EventDef(name="100m Relay", duration=5),
-        EventDef(name="Quadruple Jump", duration=12),
-        EventDef(name="Boot 100m", duration=5),
-        EventDef(name="1k Std Dev", duration=8),
+        EventDef(name="100 and 10 Hurdles", duration=7, entries=[SEAN]),
+        EventDef(name="Blind Walk", duration=7, entries=[]),
+        EventDef(name="Random 400-2000", duration=10, entries=[]),
+        EventDef(name="Wheel Throw", duration=8, entries=[]),
+        EventDef(name="Frisbee Put", duration=15, entries=[]),
+        EventDef(name="Shot Relay", duration=9, entries=[]),
+        EventDef(name="100m Relay", duration=5, entries=[]),
+        EventDef(name="Quadruple Jump", duration=12, entries=[]),
+        EventDef(name="Boot 100m", duration=5, entries=[]),
+        EventDef(name="1k Std Dev", duration=8, entries=[]),
     ]
     with open("heat_sheet.tex", "w") as f:
         f.write(
