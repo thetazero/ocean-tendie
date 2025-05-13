@@ -194,6 +194,17 @@ def parse_entries(
 
 if __name__ == "__main__":
     LOSHA = Athlete(name="Aleksei Seletskiy", team=Team.ONE)
+    NICO = Athlete(name="Nicolo Fasanelli", team=Team.ONE)
+    COYLE = Athlete(name="Matthew Coyle", team=Team.ONE)
+    EAMON = Athlete(name="Eamon Brady", team=Team.ONE)
+    SEAN = Athlete(name="Sean Dutton", team=Team.ONE)
+    MARKOS = Athlete(name="Markos Koukoularis", team=Team.ONE)
+    KENJI = Athlete(name="Kenji Tella", team=Team.TWO)
+    MIA = Athlete(name="Mia Constantin", team=Team.TWO)
+    GREG = Athlete(name="Greg Kossuth", team=Team.TWO)
+    SETH = Athlete(name="Seth Williams", team=Team.TWO)
+    COLIN = Athlete(name="Colin McLaughlin", team=Team.TWO)
+    WILL = Athlete(name="William Rifkin", team=Team.TWO)
 
     events = [
         EventDef(
@@ -272,6 +283,15 @@ if __name__ == "__main__":
         events,
         {
             "losha": LOSHA,
+            "greg": GREG,
+            "kenji": KENJI,
+            "mia": MIA,
+            "seth": SETH,
+            "will": WILL,
+            "coyle": COYLE,
+            "eamon": EAMON,
+            "markos": MARKOS,
+            "nicol": NICO,
         },
         {
             "100 and 10 hurdles": events[0],
