@@ -47,7 +47,7 @@ class EventDef:
 class Event:
     name: str
     time: str
-    heats: list[list[Athlete]]
+    heats: list[list[tuple[Athlete, str]]]
     kind: EventKind
     average: float
     std_dev: float
@@ -70,31 +70,23 @@ def gen_event_list(events: list[Event]) -> str:
 \\end{{tabular}}
 """
 
-def format_seed_time(seed_time: float, event: Event) -> str:
-    if event.average < 60:
+def format_seed_time(seed_time: float, average: float) -> str:
+    if average < 60:
         return f"{seed_time:.2f}"
     truncated_seconds = math.floor(seed_time % 60 * 10) / 10
     return f"{int(seed_time // 60)}:{truncated_seconds:04.1f}"
 
 
-def render_heat(heat: list[Athlete], heat_number: int | None, event: Event) -> str:
-    seed_times = [
-        max(0, random.gauss(event.average, event.std_dev)) for _ in range(len(heat))
-    ]
-    seed_times.sort()
-    if event.kind.is_run():
-        seed_times = [format_seed_time(seed, event) for seed in seed_times]
-    else:
-        seed_times = [f"{seed:.2f}m" for seed in seed_times]
+def render_heat(heat: list[tuple[Athlete, str]], heat_number: int | None, event: Event) -> str:
     if heat_number is not None:
         return (NEWLINE).join(
             f"{heat_number if i==0 else ''} & {i + 1} & {athlete.name} & {athlete.team.value} & {seed} &{DOUBLE_BACKSLASH}"
-            for i, (athlete, seed) in enumerate(zip(heat, seed_times))
+            for i, (athlete, seed) in enumerate(heat)
         )
     else:
         return (NEWLINE).join(
             f"{i + 1} & {athlete.name} & {athlete.team.value} & {seed} &{DOUBLE_BACKSLASH}"
-            for i, (athlete, seed) in enumerate(zip(heat, seed_times))
+            for i, (athlete, seed) in enumerate(heat)
         )
 
 
@@ -126,10 +118,27 @@ def render_event_heat(event: Event) -> str:
 """
 
 
-def make_heats(entries: list[Athlete], max_heat_size: int) -> list[list[Athlete]]:
-    heats = []
+def make_heats(entries: list[Athlete], max_heat_size: int, avg: float, std_dev: float, is_run: bool) -> list[list[tuple[Athlete, str]]]:
+    random.shuffle(entries)
+    heats: list[list[tuple[Athlete, str]]] = []
+    times = [
+        max(0, random.gauss(avg, std_dev))
+        for _ in range(len(entries))
+    ]
+    if is_run:
+        times.sort()
+    else:
+        times.sort(reverse=True)
     for i in range(0, len(entries), max_heat_size):
-        heats.append(entries[i : i + max_heat_size])
+        heat : list[tuple[Athlete, str]] = []
+        for j in range(i, min(i + max_heat_size, len(entries))):
+            mark = times.pop(0)
+            if is_run:
+                mark = format_seed_time(mark, avg) 
+            else:
+                mark = f"{mark:.2f}"
+            heat.append((entries[j], mark))
+        heats.append(heat)
     return heats
 
 
@@ -150,7 +159,7 @@ def generate_heat_sheet(
                 name=event.name,
                 time=start_time.strftime("%-I:%M %p"),
                 kind=event.kind,
-                heats=make_heats(event.entries, event.max_heat_size),
+                heats=make_heats(event.entries, event.max_heat_size, event.average, event.std_dev, event.kind.is_run()),
                 average=event.average,
                 std_dev=event.std_dev,
             )
