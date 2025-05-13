@@ -287,7 +287,7 @@ def count_events_per_team(events: list[EventDef]) -> dict[Team, int]:
 
 if __name__ == "__main__":
     LOSHA = Athlete(name="Aleksei Seletskiy", team=Team.ONE)
-    NICO = Athlete(name="Nicolo Fasanelli", team=Team.ONE)
+    NICO = Athlete(name="Nicolo Fasanelli", team=Team.TWO)
     COYLE = Athlete(name="Matthew Coyle", team=Team.ONE)
     EAMON = Athlete(name="Eamon Brady", team=Team.ONE)
     SEAN = Athlete(name="Sean Dutton", team=Team.TWO)
@@ -298,6 +298,8 @@ if __name__ == "__main__":
     SETH = Athlete(name="Seth Williams", team=Team.TWO)
     COLIN = Athlete(name="Colin McLaughlin", team=Team.TWO)
     WILL = Athlete(name="William Rifkin", team=Team.TWO)
+    TEAM_GARY = Athlete(name="Team Gary", team=Team.ONE)
+    TEAM_TIM = Athlete(name="Team Tim", team=Team.TWO)
 
     random.seed(0)
 
@@ -348,7 +350,7 @@ if __name__ == "__main__":
     )
     shot_relay = EventDef(
         name="Shot Relay",
-        duration=9,
+        duration=11,
         entries=[],
         kind=EventKind.FIELD_RELAY,
         max_heat_size=20,
@@ -360,7 +362,7 @@ if __name__ == "__main__":
         duration=5,
         entries=[],
         kind=EventKind.RELAY,
-        max_heat_size=8,
+        max_heat_size=9,
         average=18,
         std_dev=2,
     )
@@ -392,16 +394,16 @@ if __name__ == "__main__":
         std_dev=0.5,
     )
     events = [
-        hurdles,
-        blind_walk,
-        random_400_2000,
+        k_std_dev,
+        boot_100m,
         zach_wheel_throw,
         frisbee,
         shot_relay,
-        hundred_relay,
         quad_jump,
-        boot_100m,
-        k_std_dev,
+        blind_walk,
+        hurdles,
+        hundred_relay,
+        random_400_2000,
     ]
     parse_entries(
         "source.csv",
@@ -419,6 +421,8 @@ if __name__ == "__main__":
             "sean": SEAN,
             "coolin": COLIN,
             "kenji tella": KENJI,
+            "team gary": TEAM_GARY,
+            "team tim": TEAM_TIM,
         },
         {
             "100 and 10 hurdles": hurdles,
