@@ -33,13 +33,14 @@ class EventDef:
     duration: int  # In minutes
     entries: list[Athlete]
     kind: EventKind
+    max_heat_size: int
 
 
 @dataclass
 class Event:
     name: str
     time: str
-    entries: list[Athlete]
+    heats: list[list[Athlete]]
     kind: EventKind
 
 
@@ -61,6 +62,13 @@ def gen_event_list(events: list[Event]) -> str:
 """
 
 
+def render_heat(heat: list[Athlete]) -> str:
+    return (NEWLINE).join(
+        f"{i + 1} & {athlete.name} & {athlete.team.value} & seed time &{DOUBLE_BACKSLASH}"
+        for i, athlete in enumerate(heat)
+    )
+
+
 def render_event_heat(event: Event) -> str:
     return f"""
 \\textbf{{Event:}} {event.name} \\quad \\textbf{{Time:}} {event.time} 
@@ -74,14 +82,21 @@ def render_event_heat(event: Event) -> str:
 \\midrule
 {
     (NEWLINE).join(
-        f"{i + 1} & {athlete.name} & {athlete.team.value} & seed time &{DOUBLE_BACKSLASH}"
-        for i, athlete in enumerate(event.entries)
+        render_heat(heat)
+        for heat in event.heats
     )
 }
 \\bottomrule
 \\end{{tabular}}
 \\vspace{{2.5em}}
 """
+
+
+def make_heats(entries: list[Athlete], max_heat_size: int) -> list[list[Athlete]]:
+    heats = []
+    for i in range(0, len(entries), max_heat_size):
+        heats.append(entries[i : i + max_heat_size])
+    return heats
 
 
 def generate_heat_sheet(
@@ -100,8 +115,8 @@ def generate_heat_sheet(
             Event(
                 name=event.name,
                 time=start_time.strftime("%-I:%M %p"),
-                entries=event.entries,
                 kind=event.kind,
+                heats=make_heats(event.entries, event.max_heat_size),
             )
         )
         start_time += time_delta + between_event_time
@@ -149,34 +164,131 @@ def generate_heat_sheet(
 """
 
 
-def parse_entries(file_path: str, events: list[EventDef]) -> None:
+def parse_entries(
+    file_path: str,
+    events: list[EventDef],
+    name_map: dict[str, Athlete],
+    event_map: dict[str, EventDef],
+) -> None:
+    entry_map: dict[EventDef, list[Athlete]] = {}
+
     with open(file_path, "r") as f:
         reader = csv.DictReader(f)
         for row in reader:
             selected_events = row["List of events"].strip().split(",")
+            for i in range(len(selected_events)):
+                selected_events[i] = selected_events[i].strip().lower()
             athlete_name = row["Name"]
+            for event_name in selected_events:
+                event = event_map.get(event_name)
+                if event:
+                    athlete = name_map.get(athlete_name)
+                    if athlete:
+                        entry_map.setdefault(event, []).append(athlete)
+                    else:
+                        print(f"Athlete '{athlete_name}' not found in name map.")
+                else:
+                    print(f"Event '{event_name}' not found in event map.")
     print("Entries parsed successfully.")
 
-if __name__ == "__main__":
-    LOSHA = Athlete(
-        name="Aleksei Seletskiy", team=Team.ONE
-    )
 
+if __name__ == "__main__":
+    LOSHA = Athlete(name="Aleksei Seletskiy", team=Team.ONE)
 
     events = [
         EventDef(
-            name="100 and 10 Hurdles", duration=7, entries=[SEAN], kind=EventKind.TRACK
+            name="100 and 10 Hurdles",
+            duration=7,
+            entries=[],
+            kind=EventKind.TRACK,
+            max_heat_size=4,
         ),
-        EventDef(name="Blind Walk", duration=7, entries=[], kind=EventKind.TRACK),
-        EventDef(name="Random 400-2000", duration=10, entries=[], kind=EventKind.TRACK),
-        EventDef(name="Wheel Throw", duration=8, entries=[], kind=EventKind.FIELD),
-        EventDef(name="Frisbee Put", duration=15, entries=[], kind=EventKind.FIELD),
-        EventDef(name="Shot Relay", duration=9, entries=[], kind=EventKind.FIELD_RELAY),
-        EventDef(name="100m Relay", duration=5, entries=[], kind=EventKind.RELAY),
-        EventDef(name="Quadruple Jump", duration=12, entries=[], kind=EventKind.FIELD),
-        EventDef(name="Boot 100m", duration=5, entries=[], kind=EventKind.TRACK),
-        EventDef(name="1k Std Dev", duration=8, entries=[], kind=EventKind.TRACK),
+        EventDef(
+            name="Blind Walk",
+            duration=7,
+            entries=[],
+            kind=EventKind.TRACK,
+            max_heat_size=8,
+        ),
+        EventDef(
+            name="Random 400-2000",
+            duration=10,
+            entries=[],
+            kind=EventKind.TRACK,
+            max_heat_size=20,
+        ),
+        EventDef(
+            name="Wheel Throw",
+            duration=8,
+            entries=[],
+            kind=EventKind.FIELD,
+            max_heat_size=20,
+        ),
+        EventDef(
+            name="Frisbee Put",
+            duration=15,
+            entries=[],
+            kind=EventKind.FIELD,
+            max_heat_size=20,
+        ),
+        EventDef(
+            name="Shot Relay",
+            duration=9,
+            entries=[],
+            kind=EventKind.FIELD_RELAY,
+            max_heat_size=20,
+        ),
+        EventDef(
+            name="100m Relay",
+            duration=5,
+            entries=[],
+            kind=EventKind.RELAY,
+            max_heat_size=8,
+        ),
+        EventDef(
+            name="Quadruple Jump",
+            duration=12,
+            entries=[],
+            kind=EventKind.FIELD,
+            max_heat_size=20,
+        ),
+        EventDef(
+            name="Boot 100m",
+            duration=5,
+            entries=[],
+            kind=EventKind.TRACK,
+            max_heat_size=8,
+        ),
+        EventDef(
+            name="1k Std Dev",
+            duration=8,
+            entries=[],
+            kind=EventKind.TRACK,
+            max_heat_size=8,
+        ),
     ]
+    parse_entries(
+        "source.csv",
+        events,
+        {
+            "losha": LOSHA,
+        },
+        {
+            "100 and 10 hurdles": events[0],
+            "blind walk": events[1],
+            "random 400-2000": events[2],
+            "wheel throw": events[3],
+            "frisbee put": events[4],
+            "frisbee shotput": events[4],
+            "shot relay": events[5],
+            "shotput relay": events[5],
+            "100m relay": events[6],
+            "quadruple jump": events[7],
+            "boot 100m": events[8],
+            "1k standard deviation": events[9],
+            "1k std dev": events[9],
+        },
+    )
     with open("heat_sheet.tex", "w") as f:
         f.write(
             generate_heat_sheet(
