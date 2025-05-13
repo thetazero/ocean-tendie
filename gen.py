@@ -70,6 +70,7 @@ def gen_event_list(events: list[Event]) -> str:
 \\end{{tabular}}
 """
 
+
 def format_seed_time(seed_time: float, average: float) -> str:
     if average < 60:
         return f"{seed_time:.2f}"
@@ -77,7 +78,9 @@ def format_seed_time(seed_time: float, average: float) -> str:
     return f"{int(seed_time // 60)}:{truncated_seconds:04.1f}"
 
 
-def render_heat(heat: list[tuple[Athlete, str]], heat_number: int | None, event: Event) -> str:
+def render_heat(
+    heat: list[tuple[Athlete, str]], heat_number: int | None, event: Event
+) -> str:
     if heat_number is not None:
         return (NEWLINE).join(
             f"{heat_number if i==0 else ''} & {i + 1} & {athlete.name} & {athlete.team.value} & {seed} &{DOUBLE_BACKSLASH}"
@@ -118,23 +121,22 @@ def render_event_heat(event: Event) -> str:
 """
 
 
-def make_heats(entries: list[Athlete], max_heat_size: int, avg: float, std_dev: float, is_run: bool) -> list[list[tuple[Athlete, str]]]:
+def make_heats(
+    entries: list[Athlete], max_heat_size: int, avg: float, std_dev: float, is_run: bool
+) -> list[list[tuple[Athlete, str]]]:
     random.shuffle(entries)
     heats: list[list[tuple[Athlete, str]]] = []
-    times = [
-        max(0, random.gauss(avg, std_dev))
-        for _ in range(len(entries))
-    ]
+    times = [max(0, random.gauss(avg, std_dev)) for _ in range(len(entries))]
     if is_run:
         times.sort()
     else:
         times.sort(reverse=True)
     for i in range(0, len(entries), max_heat_size):
-        heat : list[tuple[Athlete, str]] = []
+        heat: list[tuple[Athlete, str]] = []
         for j in range(i, min(i + max_heat_size, len(entries))):
             mark = times.pop(0)
             if is_run:
-                mark = format_seed_time(mark, avg) 
+                mark = format_seed_time(mark, avg)
             else:
                 mark = f"{mark:.2f}"
             heat.append((entries[j], mark))
@@ -160,12 +162,24 @@ def generate_heat_sheet(
                 name=event.name,
                 time=start_time.strftime("%-I:%M %p"),
                 kind=event.kind,
-                heats=make_heats(event.entries, event.max_heat_size, event.average, event.std_dev, event.kind.is_run()),
+                heats=make_heats(
+                    event.entries,
+                    event.max_heat_size,
+                    event.average,
+                    event.std_dev,
+                    event.kind.is_run(),
+                ),
                 average=event.average,
                 std_dev=event.std_dev,
             )
         )
         start_time += time_delta + between_event_time
+
+    team_dict = {Team.ONE: set(), Team.TWO: set()}
+    for event in proc_events:
+        for heat in event.heats:
+            for athlete, _ in heat:
+                team_dict[athlete.team].add(athlete.name)
 
     return f"""\\documentclass[10pt]{{article}}
 \\usepackage[margin=0.5in]{{geometry}}
@@ -198,6 +212,16 @@ def generate_heat_sheet(
 \\vspace{{1em}}
 
 {gen_event_list(proc_events)}
+
+\\vspace{{2em}}
+\\section*{{Teams}}
+
+{
+    (NEWLINE+DOUBLE_BACKSLASH).join(
+        f"{BACKSLASH}textbf{{{team.value}}}: {', '.join(sorted(team_dict[team]))}"
+        for team in Team
+    )
+}
 
 \\twocolumn
 
@@ -246,6 +270,7 @@ def parse_entries(
                 print(f"No entries found for event '{event_name}'.")
     print("Entries parsed successfully.")
 
+
 def count_events_per_team(events: list[EventDef]) -> dict[Team, int]:
     team_count = {Team.ONE: 0, Team.TWO: 0}
     for event in events:
@@ -253,14 +278,15 @@ def count_events_per_team(events: list[EventDef]) -> dict[Team, int]:
             team_count[athlete.team] += 1
     return team_count
 
+
 if __name__ == "__main__":
     LOSHA = Athlete(name="Aleksei Seletskiy", team=Team.ONE)
     NICO = Athlete(name="Nicolo Fasanelli", team=Team.ONE)
     COYLE = Athlete(name="Matthew Coyle", team=Team.ONE)
     EAMON = Athlete(name="Eamon Brady", team=Team.ONE)
     SEAN = Athlete(name="Sean Dutton", team=Team.TWO)
-    MARKOS = Athlete(name="Markos Koukoularis", team=Team.ONE)
-    KENJI = Athlete(name="Kenji Tella", team=Team.TWO)
+    MARKOS = Athlete(name="Markos Koukoularis", team=Team.TWO)
+    KENJI = Athlete(name="Kenji Tella", team=Team.ONE)
     MIA = Athlete(name="Mia Constantin", team=Team.ONE)
     GREG = Athlete(name="Greg Kossuth", team=Team.TWO)
     SETH = Athlete(name="Seth Williams", team=Team.TWO)
@@ -269,97 +295,107 @@ if __name__ == "__main__":
 
     random.seed(0)
 
+    hurdles = EventDef(
+        name="100 and 10 Hurdles",
+        duration=7,
+        entries=[],
+        kind=EventKind.TRACK,
+        max_heat_size=4,
+        average=20,
+        std_dev=2,
+    )
+    blind_walk = EventDef(
+        name="Blind Walk",
+        duration=7,
+        entries=[],
+        kind=EventKind.FIELD,
+        max_heat_size=8,
+        average=30,
+        std_dev=5,
+    )
+    random_400_2000 = EventDef(
+        name="Random 400-2000",
+        duration=10,
+        entries=[],
+        kind=EventKind.TRACK,
+        max_heat_size=20,
+        average=200,
+        std_dev=120,
+    )
+    zach_wheel_throw = EventDef(
+        name="Zach's Wheel Throw",
+        duration=8,
+        entries=[],
+        kind=EventKind.FIELD,
+        max_heat_size=20,
+        average=10,
+        std_dev=3,
+    )
+    frisbee = EventDef(
+        name="Frisbee Put",
+        duration=15,
+        entries=[],
+        kind=EventKind.FIELD,
+        max_heat_size=20,
+        average=3,
+        std_dev=1,
+    )
+    shot_relay = EventDef(
+        name="Shot Relay",
+        duration=9,
+        entries=[],
+        kind=EventKind.FIELD_RELAY,
+        max_heat_size=20,
+        average=12,
+        std_dev=4,
+    )
+    hundred_relay = EventDef(
+        name="100m Relay",
+        duration=5,
+        entries=[],
+        kind=EventKind.RELAY,
+        max_heat_size=8,
+        average=18,
+        std_dev=2,
+    )
+    quad_jump = EventDef(
+        name="Quadruple Jump",
+        duration=12,
+        entries=[],
+        kind=EventKind.FIELD,
+        max_heat_size=20,
+        average=14,
+        std_dev=3,
+    )
+    boot_100m = EventDef(
+        name="Boot 100m",
+        duration=5,
+        entries=[],
+        kind=EventKind.TRACK,
+        max_heat_size=8,
+        average=40,
+        std_dev=5,
+    )
+    k_std_dev = EventDef(
+        name="1k Std Dev",
+        duration=8,
+        entries=[],
+        kind=EventKind.TRACK,
+        max_heat_size=8,
+        average=3,
+        std_dev=0.5,
+    )
     events = [
-        EventDef(
-            name="100 and 10 Hurdles",
-            duration=7,
-            entries=[],
-            kind=EventKind.TRACK,
-            max_heat_size=4,
-            average=20,
-            std_dev=2,
-        ),
-        EventDef(
-            name="Blind Walk",
-            duration=7,
-            entries=[],
-            kind=EventKind.FIELD,
-            max_heat_size=8,
-            average=30,
-            std_dev=5,
-        ),
-        EventDef(
-            name="Random 400-2000",
-            duration=10,
-            entries=[],
-            kind=EventKind.TRACK,
-            max_heat_size=20,
-            average=200,
-            std_dev=60,
-        ),
-        EventDef(
-            name="Zach's Wheel Throw",
-            duration=8,
-            entries=[],
-            kind=EventKind.FIELD,
-            max_heat_size=20,
-            average=10,
-            std_dev=3,
-        ),
-        EventDef(
-            name="Frisbee Put",
-            duration=15,
-            entries=[],
-            kind=EventKind.FIELD,
-            max_heat_size=20,
-            average=3,
-            std_dev=1,
-        ),
-        EventDef(
-            name="Shot Relay",
-            duration=9,
-            entries=[],
-            kind=EventKind.FIELD_RELAY,
-            max_heat_size=20,
-            average=12,
-            std_dev=4,
-        ),
-        EventDef(
-            name="100m Relay",
-            duration=5,
-            entries=[],
-            kind=EventKind.RELAY,
-            max_heat_size=8,
-            average=18,
-            std_dev=2,
-        ),
-        EventDef(
-            name="Quadruple Jump",
-            duration=12,
-            entries=[],
-            kind=EventKind.FIELD,
-            max_heat_size=20,
-            average=14,
-            std_dev=3,
-        ),
-        EventDef(
-            name="Boot 100m",
-            duration=5,
-            entries=[],
-            kind=EventKind.TRACK,
-            max_heat_size=8,
-            average=40,
-            std_dev=5,
-        ),
-        EventDef(
-            name="1k Std Dev",
-            duration=8,
-            entries=[],
-            kind=EventKind.TRACK,
-            max_heat_size=8,
-            average=3,
-            std_dev=0.5,
-        ),
+        hurdles,
+        blind_walk,
+        random_400_2000,
+        zach_wheel_throw,
+        frisbee,
+        shot_relay,
+        hundred_relay,
+        quad_jump,
+        boot_100m,
+        k_std_dev,
     ]
     parse_entries(
         "source.csv",
@@ -379,19 +415,19 @@ if __name__ == "__main__":
             "kenji tella": KENJI,
         },
         {
-            "100 and 10 hurdles": events[0],
-            "blind walk": events[1],
-            "random 400-2000": events[2],
-            "wheel throw": events[3],
-            "frisbee put": events[4],
-            "frisbee shotput": events[4],
-            "shot relay": events[5],
-            "shotput relay": events[5],
-            "100m relay": events[6],
-            "quadruple jump": events[7],
-            "boot 100m": events[8],
-            "1k standard deviation": events[9],
-            "1k std dev": events[9],
+            "100 and 10 hurdles": hurdles,
+            "blind walk": blind_walk,
+            "random 400-2000": random_400_2000,
+            "wheel throw": zach_wheel_throw,
+            "frisbee put": frisbee,
+            "frisbee shotput": frisbee,
+            "shot relay": shot_relay,
+            "shotput relay": shot_relay,
+            "100m relay": hundred_relay,
+            "quadruple jump": quad_jump,
+            "boot 100m": boot_100m,
+            "1k standard deviation": k_std_dev,
+            "1k std dev": k_std_dev,
         },
     )
     with open("heat_sheet.tex", "w") as f:
