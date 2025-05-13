@@ -12,8 +12,8 @@ NEWLINE = "\n"
 
 
 class Team(Enum):
-    ONE = "Dutty's Tuddies"
-    TWO = "Leland's Lollipops"
+    ONE = "Gary"
+    TWO = "Tim"
 
 
 class EventKind(Enum):
@@ -102,8 +102,8 @@ def render_event_heat(event: Event) -> str:
 }
 \\textbf{{{
     'Lane' if event.kind == EventKind.TRACK else 'Order'
-}}} & \\textbf{{Athlete Name}} & \\textbf{{School/Team}} & \\textbf{{{
-    'Seed Time' if event.kind in (EventKind.TRACK, EventKind.RELAY) else 'Mark'
+}}} & \\textbf{{Athlete Name}} & \\textbf{{Team}} & \\textbf{{{
+    'Seed' if event.kind in (EventKind.TRACK, EventKind.RELAY) else 'Mark'
 }}} \\\\
 \\midrule
 {
@@ -166,8 +166,8 @@ def generate_heat_sheet(
         )
         start_time += time_delta + between_event_time
 
-    return f"""\\documentclass[11pt]{{article}}
-\\usepackage[margin=1in]{{geometry}}
+    return f"""\\documentclass[10pt]{{article}}
+\\usepackage[margin=0.5in]{{geometry}}
 \\usepackage{{booktabs}}
 \\usepackage{{multicol}}
 \\usepackage{{titlesec}}
@@ -193,10 +193,7 @@ def generate_heat_sheet(
 
 {gen_event_list(proc_events)}
 
-
-\\vspace{{2em}}
-
-\\section*{{Track Event Heat Sheet}}
+\\twocolumn
 
 {
     (NEWLINE).join(
@@ -243,16 +240,22 @@ def parse_entries(
                 print(f"No entries found for event '{event_name}'.")
     print("Entries parsed successfully.")
 
+def count_events_per_team(events: list[EventDef]) -> dict[Team, int]:
+    team_count = {Team.ONE: 0, Team.TWO: 0}
+    for event in events:
+        for athlete in event.entries:
+            team_count[athlete.team] += 1
+    return team_count
 
 if __name__ == "__main__":
     LOSHA = Athlete(name="Aleksei Seletskiy", team=Team.ONE)
     NICO = Athlete(name="Nicolo Fasanelli", team=Team.ONE)
     COYLE = Athlete(name="Matthew Coyle", team=Team.ONE)
     EAMON = Athlete(name="Eamon Brady", team=Team.ONE)
-    SEAN = Athlete(name="Sean Dutton", team=Team.ONE)
+    SEAN = Athlete(name="Sean Dutton", team=Team.TWO)
     MARKOS = Athlete(name="Markos Koukoularis", team=Team.ONE)
     KENJI = Athlete(name="Kenji Tella", team=Team.TWO)
-    MIA = Athlete(name="Mia Constantin", team=Team.TWO)
+    MIA = Athlete(name="Mia Constantin", team=Team.ONE)
     GREG = Athlete(name="Greg Kossuth", team=Team.TWO)
     SETH = Athlete(name="Seth Williams", team=Team.TWO)
     COLIN = Athlete(name="Colin McLaughlin", team=Team.TWO)
@@ -274,7 +277,7 @@ if __name__ == "__main__":
             name="Blind Walk",
             duration=7,
             entries=[],
-            kind=EventKind.TRACK,
+            kind=EventKind.FIELD,
             max_heat_size=8,
             average=30,
             std_dev=5,
@@ -398,3 +401,4 @@ if __name__ == "__main__":
             )
         )
     print("Heat sheet template generated as heat_sheet.tex")
+    print(count_events_per_team(events))
