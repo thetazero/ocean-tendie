@@ -236,7 +236,7 @@ if __name__ == "__main__":
             max_heat_size=20,
         ),
         EventDef(
-            name="Wheel Throw",
+            name="Zach's Wheel Throw",
             duration=8,
             entries=[],
             kind=EventKind.FIELD,
