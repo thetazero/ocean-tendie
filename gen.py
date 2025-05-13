@@ -70,6 +70,7 @@ def gen_event_list(events: list[Event]) -> str:
 \\end{{tabular}}
 """
 
+
 def format_seed_time(seed_time: float, average: float) -> str:
     if average < 60:
         return f"{seed_time:.2f}"
@@ -77,7 +78,9 @@ def format_seed_time(seed_time: float, average: float) -> str:
     return f"{int(seed_time // 60)}:{truncated_seconds:04.1f}"
 
 
-def render_heat(heat: list[tuple[Athlete, str]], heat_number: int | None, event: Event) -> str:
+def render_heat(
+    heat: list[tuple[Athlete, str]], heat_number: int | None, event: Event
+) -> str:
     if heat_number is not None:
         return (NEWLINE).join(
             f"{heat_number if i==0 else ''} & {i + 1} & {athlete.name} & {athlete.team.value} & {seed} &{DOUBLE_BACKSLASH}"
@@ -118,23 +121,22 @@ def render_event_heat(event: Event) -> str:
 """
 
 
-def make_heats(entries: list[Athlete], max_heat_size: int, avg: float, std_dev: float, is_run: bool) -> list[list[tuple[Athlete, str]]]:
+def make_heats(
+    entries: list[Athlete], max_heat_size: int, avg: float, std_dev: float, is_run: bool
+) -> list[list[tuple[Athlete, str]]]:
     random.shuffle(entries)
     heats: list[list[tuple[Athlete, str]]] = []
-    times = [
-        max(0, random.gauss(avg, std_dev))
-        for _ in range(len(entries))
-    ]
+    times = [max(0, random.gauss(avg, std_dev)) for _ in range(len(entries))]
     if is_run:
         times.sort()
     else:
         times.sort(reverse=True)
     for i in range(0, len(entries), max_heat_size):
-        heat : list[tuple[Athlete, str]] = []
+        heat: list[tuple[Athlete, str]] = []
         for j in range(i, min(i + max_heat_size, len(entries))):
             mark = times.pop(0)
             if is_run:
-                mark = format_seed_time(mark, avg) 
+                mark = format_seed_time(mark, avg)
             else:
                 mark = f"{mark:.2f}"
             heat.append((entries[j], mark))
@@ -159,12 +161,24 @@ def generate_heat_sheet(
                 name=event.name,
                 time=start_time.strftime("%-I:%M %p"),
                 kind=event.kind,
-                heats=make_heats(event.entries, event.max_heat_size, event.average, event.std_dev, event.kind.is_run()),
+                heats=make_heats(
+                    event.entries,
+                    event.max_heat_size,
+                    event.average,
+                    event.std_dev,
+                    event.kind.is_run(),
+                ),
                 average=event.average,
                 std_dev=event.std_dev,
             )
         )
         start_time += time_delta + between_event_time
+
+    team_dict = {Team.ONE: set(), Team.TWO: set()}
+    for event in proc_events:
+        for heat in event.heats:
+            for athlete, _ in heat:
+                team_dict[athlete.team].add(athlete.name)
 
     return f"""\\documentclass[10pt]{{article}}
 \\usepackage[margin=0.5in]{{geometry}}
@@ -192,6 +206,16 @@ def generate_heat_sheet(
 \\vspace{{1em}}
 
 {gen_event_list(proc_events)}
+
+\\vspace{{2em}}
+\\section*{{Teams}}
+
+{
+    (NEWLINE+DOUBLE_BACKSLASH).join(
+        f"{BACKSLASH}textbf{{{team.value}}}: {', '.join(sorted(team_dict[team]))}"
+        for team in Team
+    )
+}
 
 \\twocolumn
 
@@ -240,6 +264,7 @@ def parse_entries(
                 print(f"No entries found for event '{event_name}'.")
     print("Entries parsed successfully.")
 
+
 def count_events_per_team(events: list[EventDef]) -> dict[Team, int]:
     team_count = {Team.ONE: 0, Team.TWO: 0}
     for event in events:
@@ -247,14 +272,15 @@ def count_events_per_team(events: list[EventDef]) -> dict[Team, int]:
             team_count[athlete.team] += 1
     return team_count
 
+
 if __name__ == "__main__":
     LOSHA = Athlete(name="Aleksei Seletskiy", team=Team.ONE)
     NICO = Athlete(name="Nicolo Fasanelli", team=Team.ONE)
     COYLE = Athlete(name="Matthew Coyle", team=Team.ONE)
     EAMON = Athlete(name="Eamon Brady", team=Team.ONE)
     SEAN = Athlete(name="Sean Dutton", team=Team.TWO)
-    MARKOS = Athlete(name="Markos Koukoularis", team=Team.ONE)
-    KENJI = Athlete(name="Kenji Tella", team=Team.TWO)
+    MARKOS = Athlete(name="Markos Koukoularis", team=Team.TWO)
+    KENJI = Athlete(name="Kenji Tella", team=Team.ONE)
     MIA = Athlete(name="Mia Constantin", team=Team.ONE)
     GREG = Athlete(name="Greg Kossuth", team=Team.TWO)
     SETH = Athlete(name="Seth Williams", team=Team.TWO)
