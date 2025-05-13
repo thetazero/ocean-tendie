@@ -281,7 +281,7 @@ def count_events_per_team(events: list[EventDef]) -> dict[Team, int]:
 
 if __name__ == "__main__":
     LOSHA = Athlete(name="Aleksei Seletskiy", team=Team.ONE)
-    NICO = Athlete(name="Nicolo Fasanelli", team=Team.ONE)
+    NICO = Athlete(name="Nicolo Fasanelli", team=Team.TWO)
     COYLE = Athlete(name="Matthew Coyle", team=Team.ONE)
     EAMON = Athlete(name="Eamon Brady", team=Team.ONE)
     SEAN = Athlete(name="Sean Dutton", team=Team.TWO)
@@ -292,6 +292,8 @@ if __name__ == "__main__":
     SETH = Athlete(name="Seth Williams", team=Team.TWO)
     COLIN = Athlete(name="Colin McLaughlin", team=Team.TWO)
     WILL = Athlete(name="William Rifkin", team=Team.TWO)
+    TEAM_GARY = Athlete(name="Team Gary", team=Team.ONE)
+    TEAM_TIM = Athlete(name="Team Tim", team=Team.TWO)
 
     random.seed(0)
 
@@ -413,6 +415,8 @@ if __name__ == "__main__":
             "sean": SEAN,
             "coolin": COLIN,
             "kenji tella": KENJI,
+            "team gary": TEAM_GARY,
+            "team tim": TEAM_TIM,
         },
         {
             "100 and 10 hurdles": hurdles,
