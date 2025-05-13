@@ -6,6 +6,7 @@ import csv
 
 
 DOUBLE_BACKSLASH = "\\\\"
+BACKSLASH = "\\"
 NEWLINE = "\n"
 
 
@@ -62,11 +63,17 @@ def gen_event_list(events: list[Event]) -> str:
 """
 
 
-def render_heat(heat: list[Athlete]) -> str:
-    return (NEWLINE).join(
-        f"{i + 1} & {athlete.name} & {athlete.team.value} & seed time &{DOUBLE_BACKSLASH}"
-        for i, athlete in enumerate(heat)
-    )
+def render_heat(heat: list[Athlete], heat_number: int | None) -> str:
+    if heat_number is not None:
+        return (NEWLINE).join(
+            f"{heat_number if i==0 else ''} & {i + 1} & {athlete.name} & {athlete.team.value} & seed time &{DOUBLE_BACKSLASH}"
+            for i, athlete in enumerate(heat)
+        )
+    else:
+        return (NEWLINE).join(
+            f"{i + 1} & {athlete.name} & {athlete.team.value} & seed time &{DOUBLE_BACKSLASH}"
+            for i, athlete in enumerate(heat)
+        )
 
 
 def render_event_heat(event: Event) -> str:
@@ -74,16 +81,19 @@ def render_event_heat(event: Event) -> str:
 \\textbf{{Event:}} {event.name} \\quad \\textbf{{Time:}} {event.time} 
 
 \\vspace{{1em}}
-\\begin{{tabular}}{{@{{}}lllll@{{}}}}
+\\begin{{tabular}}{{@{{}}{"lllll" if len(event.heats) == 1 else "llllll"}@{{}}}}
 \\toprule
+{
+    BACKSLASH + "textbf{{Heat}} &" if len(event.heats) > 1 else ""
+}
 \\textbf{{{
     'Lane' if event.kind == EventKind.TRACK else 'Order'
 }}} & \\textbf{{Athlete Name}} & \\textbf{{School/Team}} & \\textbf{{Seed Time}} \\\\
 \\midrule
 {
     (NEWLINE).join(
-        render_heat(heat)
-        for heat in event.heats
+        render_heat(heat, i + 1 if len(event.heats) > 1 else None)
+        for i, heat in enumerate(event.heats)
     )
 }
 \\bottomrule
@@ -189,7 +199,7 @@ def parse_entries(
                         print(f"Athlete '{athlete_name}' not found in name map.")
                 else:
                     print(f"Event '{event_name}' not found in event map.")
-        
+
         for event in events:
             event_name = event.name.lower()
             if event_name in entry_map:
