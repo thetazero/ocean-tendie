@@ -11,8 +11,8 @@ NEWLINE = "\n"
 
 
 class Team(Enum):
-    ONE = "Carnegie University of Melon"
-    TWO = "Melon University of Carnegie"
+    ONE = "Dutty's Tuddies"
+    TWO = "Leland's Lollipops"
 
 
 class EventKind(Enum):
