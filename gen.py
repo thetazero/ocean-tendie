@@ -147,6 +147,7 @@ def generate_heat_sheet(
     date: str,
     location: str,
     host: str,
+    description: str,  # New parameter for meet description
     events: list[EventDef],
     start_time: datetime,
     between_event_time: timedelta,
@@ -188,6 +189,11 @@ def generate_heat_sheet(
     \\textbf{{Date:}} {date} \\hspace{{2cm}} \\textbf{{Location:}} {location} \\\\
     \\textbf{{Host:}} {host}
 \\end{{center}}
+
+\\vspace{{1em}}
+
+\\section*{{Meet Information}}
+{description}
 
 \\vspace{{1em}}
 
@@ -395,6 +401,15 @@ if __name__ == "__main__":
                 date="May 13, 2025",
                 location="Gesling Stadium",
                 host="Carnegie Mellon University",
+                description="""This prestigious event honors the legacy of Sean Dutton, featuring a variety of prestigious track and field competitions. Competitors will face challenging events like the Blind Walk, Frisbee Put, and the notorious 100 and 10 Hurdles. May the most ocean tendie team win!
+            
+\\textbf{Special Rules:}
+\\begin{itemize}
+  \\item All times and measurements are final, no protests will be accepted
+  \\item Team Gary and Team Tim will be awarded points based on a scoring system akin to the Obelisk scoring system
+  \\item Boot 100m competitors must provide their own boots
+\\end{itemize}
+""",
                 events=events,
                 start_time=datetime.strptime("2025-05-13 18:00", "%Y-%m-%d %H:%M"),
                 between_event_time=timedelta(minutes=3),
