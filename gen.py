@@ -149,7 +149,8 @@ def generate_heat_sheet(
     date: str,
     location: str,
     host: str,
-    description: str,  # New parameter for meet description
+    description: str,
+    meet_history: str,  # New parameter for meet history
     events: list[EventDef],
     start_time: datetime,
     between_event_time: timedelta,
@@ -208,6 +209,11 @@ def generate_heat_sheet(
 
 \\section*{{Meet Information}}
 {description}
+
+\\vspace{{1em}}
+
+\\section*{{Meet History}}
+{meet_history}
 
 \\vspace{{1em}}
 
@@ -444,6 +450,25 @@ if __name__ == "__main__":
   \\item All times and measurements are final, no protests will be accepted
   \\item Team Gary and Team Tim will be awarded points based on a scoring system akin to the Obelisk scoring system
   \\item Boot 100m competitors must provide their own boots
+  \\item stdDev competitors must maintain a minimum pace of 5:00/km
+\\end{itemize}
+""",
+                meet_history="""The Sean Dutton Memorial Ocean Tendie Invitational began in 2022 as a friendly competition between Track Club members. What started as a joke quickly evolved into an annual tradition with increasingly bizarre events and scoring methods along with grand slam style prize winnings funded solely by Aleksei Seletskiy. For more info on the history of the event, please visit the [Sean Dutton Memorial Ocean Tendie Invitational Wikipedia page].
+
+\\vspace{0.5em}
+\\textbf{Past Champions:}
+\\begin{itemize}
+  \\item 2022: Team Gary (Captain: Elijah Sech) - 420 points
+  \\item 2023: Team Tim (Captain: Sean Dutton) - 420 points
+  \\item 2024: Team Gary (Captain: Leland Davies) - 420 points
+\\end{itemize}
+
+\\vspace{0.5em}
+\\textbf{Notable Records:}
+\\begin{itemize}
+  \\item Blind Walk: Markos Koukoularis (2023) - Walked 30m without deviating more than 1m from the center line
+  \\item Boot 100m: Seth Williams (2024) - 32.56s wearing size 19 Ivanov boots
+  \\item Frisbee Put: Coolin Mclaughlin (2022) - 18.7m throw using only his non-dominant hand
 \\end{itemize}
 """,
                 events=events,
