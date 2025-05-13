@@ -1,8 +1,9 @@
-from typing import NamedTuple
 from datetime import datetime, timedelta
 from dataclasses import dataclass
 from enum import Enum
 import csv
+import random
+import math
 
 
 DOUBLE_BACKSLASH = "\\\\"
@@ -21,6 +22,9 @@ class EventKind(Enum):
     RELAY = "Relay"
     FIELD_RELAY = "Field Relay"
 
+    def is_run(self) -> bool:
+        return self in (EventKind.TRACK, EventKind.RELAY)
+
 
 @dataclass
 class Athlete:
@@ -35,6 +39,8 @@ class EventDef:
     entries: list[Athlete]
     kind: EventKind
     max_heat_size: int
+    average: float
+    std_dev: float
 
 
 @dataclass
@@ -43,6 +49,8 @@ class Event:
     time: str
     heats: list[list[Athlete]]
     kind: EventKind
+    average: float
+    std_dev: float
 
 
 def gen_event_list(events: list[Event]) -> str:
@@ -62,17 +70,31 @@ def gen_event_list(events: list[Event]) -> str:
 \\end{{tabular}}
 """
 
+def format_seed_time(seed_time: float, event: Event) -> str:
+    if event.average < 60:
+        return f"{seed_time:.2f}"
+    truncated_seconds = math.floor(seed_time % 60 * 10) / 10
+    return f"{int(seed_time // 60)}:{truncated_seconds:04.1f}"
 
-def render_heat(heat: list[Athlete], heat_number: int | None) -> str:
+
+def render_heat(heat: list[Athlete], heat_number: int | None, event: Event) -> str:
+    seed_times = [
+        max(0, random.gauss(event.average, event.std_dev)) for _ in range(len(heat))
+    ]
+    seed_times.sort()
+    if event.kind.is_run():
+        seed_times = [format_seed_time(seed, event) for seed in seed_times]
+    else:
+        seed_times = [f"{seed:.2f}m" for seed in seed_times]
     if heat_number is not None:
         return (NEWLINE).join(
-            f"{heat_number if i==0 else ''} & {i + 1} & {athlete.name} & {athlete.team.value} & seed time &{DOUBLE_BACKSLASH}"
-            for i, athlete in enumerate(heat)
+            f"{heat_number if i==0 else ''} & {i + 1} & {athlete.name} & {athlete.team.value} & {seed} &{DOUBLE_BACKSLASH}"
+            for i, (athlete, seed) in enumerate(zip(heat, seed_times))
         )
     else:
         return (NEWLINE).join(
-            f"{i + 1} & {athlete.name} & {athlete.team.value} & seed time &{DOUBLE_BACKSLASH}"
-            for i, athlete in enumerate(heat)
+            f"{i + 1} & {athlete.name} & {athlete.team.value} & {seed} &{DOUBLE_BACKSLASH}"
+            for i, (athlete, seed) in enumerate(zip(heat, seed_times))
         )
 
 
@@ -88,11 +110,13 @@ def render_event_heat(event: Event) -> str:
 }
 \\textbf{{{
     'Lane' if event.kind == EventKind.TRACK else 'Order'
-}}} & \\textbf{{Athlete Name}} & \\textbf{{School/Team}} & \\textbf{{Seed Time}} \\\\
+}}} & \\textbf{{Athlete Name}} & \\textbf{{School/Team}} & \\textbf{{{
+    'Seed Time' if event.kind in (EventKind.TRACK, EventKind.RELAY) else 'Mark'
+}}} \\\\
 \\midrule
 {
     (NEWLINE).join(
-        render_heat(heat, i + 1 if len(event.heats) > 1 else None)
+        render_heat(heat, i + 1 if len(event.heats) > 1 else None, event)
         for i, heat in enumerate(event.heats)
     )
 }
@@ -127,6 +151,8 @@ def generate_heat_sheet(
                 time=start_time.strftime("%-I:%M %p"),
                 kind=event.kind,
                 heats=make_heats(event.entries, event.max_heat_size),
+                average=event.average,
+                std_dev=event.std_dev,
             )
         )
         start_time += time_delta + between_event_time
@@ -223,6 +249,8 @@ if __name__ == "__main__":
     COLIN = Athlete(name="Colin McLaughlin", team=Team.TWO)
     WILL = Athlete(name="William Rifkin", team=Team.TWO)
 
+    random.seed(0)
+
     events = [
         EventDef(
             name="100 and 10 Hurdles",
@@ -230,6 +258,8 @@ if __name__ == "__main__":
             entries=[],
             kind=EventKind.TRACK,
             max_heat_size=4,
+            average=20,
+            std_dev=2,
         ),
         EventDef(
             name="Blind Walk",
@@ -237,6 +267,8 @@ if __name__ == "__main__":
             entries=[],
             kind=EventKind.TRACK,
             max_heat_size=8,
+            average=30,
+            std_dev=5,
         ),
         EventDef(
             name="Random 400-2000",
@@ -244,6 +276,8 @@ if __name__ == "__main__":
             entries=[],
             kind=EventKind.TRACK,
             max_heat_size=20,
+            average=200,
+            std_dev=60,
         ),
         EventDef(
             name="Zach's Wheel Throw",
@@ -251,6 +285,8 @@ if __name__ == "__main__":
             entries=[],
             kind=EventKind.FIELD,
             max_heat_size=20,
+            average=10,
+            std_dev=3,
         ),
         EventDef(
             name="Frisbee Put",
@@ -258,6 +294,8 @@ if __name__ == "__main__":
             entries=[],
             kind=EventKind.FIELD,
             max_heat_size=20,
+            average=3,
+            std_dev=1,
         ),
         EventDef(
             name="Shot Relay",
@@ -265,6 +303,8 @@ if __name__ == "__main__":
             entries=[],
             kind=EventKind.FIELD_RELAY,
             max_heat_size=20,
+            average=12,
+            std_dev=4,
         ),
         EventDef(
             name="100m Relay",
@@ -272,6 +312,8 @@ if __name__ == "__main__":
             entries=[],
             kind=EventKind.RELAY,
             max_heat_size=8,
+            average=18,
+            std_dev=2,
         ),
         EventDef(
             name="Quadruple Jump",
@@ -279,6 +321,8 @@ if __name__ == "__main__":
             entries=[],
             kind=EventKind.FIELD,
             max_heat_size=20,
+            average=14,
+            std_dev=3,
         ),
         EventDef(
             name="Boot 100m",
@@ -286,6 +330,8 @@ if __name__ == "__main__":
             entries=[],
             kind=EventKind.TRACK,
             max_heat_size=8,
+            average=40,
+            std_dev=5,
         ),
         EventDef(
             name="1k Std Dev",
@@ -293,6 +339,8 @@ if __name__ == "__main__":
             entries=[],
             kind=EventKind.TRACK,
             max_heat_size=8,
+            average=3,
+            std_dev=0.5,
         ),
     ]
     parse_entries(
@@ -301,16 +349,16 @@ if __name__ == "__main__":
         {
             "losha": LOSHA,
             "greg": GREG,
-            "kenji": KENJI,
             "mia": MIA,
             "seth": SETH,
             "will": WILL,
             "matthew coyle": COYLE,
             "eamon": EAMON,
             "markos": MARKOS,
-            "nicol": NICO,
+            "nicolo fasanelli": NICO,
             "sean": SEAN,
             "coolin": COLIN,
+            "kenji tella": KENJI,
         },
         {
             "100 and 10 hurdles": events[0],
