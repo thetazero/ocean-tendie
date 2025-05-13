@@ -170,7 +170,7 @@ def parse_entries(
     name_map: dict[str, Athlete],
     event_map: dict[str, EventDef],
 ) -> None:
-    entry_map: dict[EventDef, list[Athlete]] = {}
+    entry_map: dict[str, list[Athlete]] = {}
 
     with open(file_path, "r") as f:
         reader = csv.DictReader(f)
@@ -178,17 +178,24 @@ def parse_entries(
             selected_events = row["List of events"].strip().split(",")
             for i in range(len(selected_events)):
                 selected_events[i] = selected_events[i].strip().lower()
-            athlete_name = row["Name"]
+            athlete_name = row["Name"].strip().lower()
             for event_name in selected_events:
                 event = event_map.get(event_name)
                 if event:
                     athlete = name_map.get(athlete_name)
                     if athlete:
-                        entry_map.setdefault(event, []).append(athlete)
+                        entry_map.setdefault(event.name.lower(), []).append(athlete)
                     else:
                         print(f"Athlete '{athlete_name}' not found in name map.")
                 else:
                     print(f"Event '{event_name}' not found in event map.")
+        
+        for event in events:
+            event_name = event.name.lower()
+            if event_name in entry_map:
+                event.entries = entry_map[event_name]
+            else:
+                print(f"No entries found for event '{event_name}'.")
     print("Entries parsed successfully.")
 
 
@@ -288,10 +295,12 @@ if __name__ == "__main__":
             "mia": MIA,
             "seth": SETH,
             "will": WILL,
-            "coyle": COYLE,
+            "matthew coyle": COYLE,
             "eamon": EAMON,
             "markos": MARKOS,
             "nicol": NICO,
+            "sean": SEAN,
+            "coolin": COLIN,
         },
         {
             "100 and 10 hurdles": events[0],
